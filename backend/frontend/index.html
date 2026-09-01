@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Management System</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-badge">SMS</div>
+          <div class="brand-text">
+            <span class="brand-title">Student Management System</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Main navigation">
+          <a href="#dashboard" class="nav-link active">Dashboard</a>
+          <a href="#students" class="nav-link">Students</a>
+          <a href="#add-student" class="nav-link">Add Student</a>
+        </nav>
+      </header>
+
+      <main class="main-content">
+        <section id="dashboard" class="dashboard-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Overview</p>
+              <h1>Dashboard</h1>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card primary">
+              <div class="stat-icon">👥</div>
+              <div class="stat-content">
+                <span class="stat-label">Total Students</span>
+                <strong id="totalStudentsStat">0</strong>
+              </div>
+            </article>
+
+            <article class="stat-card purple">
+              <div class="stat-icon">🎓</div>
+              <div class="stat-content">
+                <span class="stat-label">Current Year Students</span>
+                <strong id="currentYearStat">0</strong>
+              </div>
+            </article>
+
+            <article class="stat-card blue">
+              <div class="stat-icon">🏫</div>
+              <div class="stat-content">
+                <span class="stat-label">Total Departments</span>
+                <strong id="departmentStat">0</strong>
+              </div>
+            </article>
+
+            <article class="stat-card teal">
+              <div class="stat-icon">✨</div>
+              <div class="stat-content">
+                <span class="stat-label">Recently Added</span>
+                <strong id="recentStudentsStat">0</strong>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="add-student" class="panel form-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Student Form</p>
+              <h2 id="formTitle">Add Student</h2>
+            </div>
+            <span id="editModeBadge" class="mode-badge hidden">Edit Mode</span>
+          </div>
+
+          <form id="studentForm" class="student-form" novalidate>
+            <input type="hidden" id="studentId" />
+
+            <div id="formErrorBox" class="form-error-box hidden" aria-live="polite"></div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label for="name">Name</label>
+                <div class="input-wrap">
+                  <span class="field-icon">👤</span>
+                  <input type="text" id="name" name="name" placeholder="Enter full name" />
+                </div>
+                <small class="error-text" data-error-for="name"></small>
+              </div>
+
+              <div class="field">
+                <label for="email">Email</label>
+                <div class="input-wrap">
+                  <span class="field-icon">✉️</span>
+                  <input type="email" id="email" name="email" placeholder="Enter email" />
+                </div>
+                <small class="error-text" data-error-for="email"></small>
+              </div>
+
+              <div class="field">
+                <label for="phone">Phone</label>
+                <div class="input-wrap">
+                  <span class="field-icon">📞</span>
+                  <input type="text" id="phone" name="phone" placeholder="Enter phone number" />
+                </div>
+                <small class="error-text" data-error-for="phone"></small>
+              </div>
+
+              <div class="field">
+                <label for="department">Department</label>
+                <div class="input-wrap">
+                  <span class="field-icon">🏛️</span>
+                  <input type="text" id="department" name="department" placeholder="Department name" />
+                </div>
+                <small class="error-text" data-error-for="department"></small>
+              </div>
+
+              <div class="field">
+                <label for="course">Course</label>
+                <div class="input-wrap">
+                  <span class="field-icon">📚</span>
+                  <input type="text" id="course" name="course" placeholder="Course name" />
+                </div>
+                <small class="error-text" data-error-for="course"></small>
+              </div>
+
+              <div class="field">
+                <label for="year">Year</label>
+                <div class="input-wrap">
+                  <span class="field-icon">🎯</span>
+                  <input type="number" id="year" name="year" min="1" max="10" placeholder="Current year" />
+                </div>
+                <small class="error-text" data-error-for="year"></small>
+              </div>
+
+              <div class="field">
+                <label for="dateOfBirth">Date of Birth</label>
+                <div class="input-wrap">
+                  <span class="field-icon">📅</span>
+                  <input type="date" id="dateOfBirth" name="dateOfBirth" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="admissionDate">Admission Date</label>
+                <div class="input-wrap">
+                  <span class="field-icon">🗓️</span>
+                  <input type="date" id="admissionDate" name="admissionDate" />
+                </div>
+              </div>
+
+              <div class="field full-width">
+                <label for="address">Address</label>
+                <div class="input-wrap textarea-wrap">
+                  <span class="field-icon">📍</span>
+                  <textarea id="address" name="address" rows="4" placeholder="Student address"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Student</button>
+              <button type="button" id="clearFormBtn" class="btn btn-secondary">Clear</button>
+              <button type="button" id="cancelEdit" class="btn btn-ghost hidden">Cancel Edit</button>
+            </div>
+          </form>
+        </section>
+
+        <section id="students" class="panel table-panel">
+          <div class="panel-header table-header">
+            <div>
+              <p class="eyebrow">Records</p>
+              <h2>Student List</h2>
+            </div>
+
+            <div class="table-actions">
+              <button id="refreshButton" class="btn btn-secondary" type="button">Refresh</button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search-box">
+              <span class="search-icon">🔎</span>
+              <input type="search" id="searchInput" placeholder="Search by name, email, phone, department or course" />
+            </div>
+
+            <div class="filters-row">
+              <select id="departmentFilter" class="filter-select">
+                <option value="">All Departments</option>
+              </select>
+
+              <select id="courseFilter" class="filter-select">
+                <option value="">All Courses</option>
+              </select>
+
+              <select id="yearFilter" class="filter-select">
+                <option value="">All Years</option>
+              </select>
+
+              <button type="button" id="clearFiltersBtn" class="btn btn-ghost small-btn">Clear Filters</button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Department</th>
+                  <th>Course</th>
+                  <th>Year</th>
+                  <th>Date of Birth</th>
+                  <th>Admission Date</th>
+                  <th>Address</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-footer">
+            <div class="page-size-box">
+              <label for="pageSizeSelect">Show</label>
+              <select id="pageSizeSelect">
+                <option value="5">5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+
+            <div id="paginationSummary" class="pagination-summary">Showing 0-0 of 0 students</div>
+
+            <div class="pagination-controls">
+              <button id="prevPageButton" class="btn btn-secondary small-btn" type="button">Previous</button>
+              <span id="currentPageLabel" class="page-indicator">Page 1</span>
+              <button id="nextPageButton" class="btn btn-secondary small-btn" type="button">Next</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">Student Management System | CRUD Application</footer>
+    </div>
+
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden" aria-live="polite">
+      <div class="spinner"></div>
+      <span>Loading students...</span>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

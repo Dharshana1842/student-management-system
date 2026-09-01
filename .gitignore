@@ -1,0 +1,25 @@
+# Java / Maven
+backend/target/
+backend/build/
+*.class
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables / secrets
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Local tool caches
+.mvn/wrapper/*.jar
+.mvn/wrapper/*.properties
