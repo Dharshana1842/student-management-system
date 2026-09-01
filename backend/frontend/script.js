@@ -177,7 +177,14 @@ function validateStudent(student) {
 function getDashboardStats() {
   const totalStudents = state.students.length;
   const currentYear = new Date().getFullYear();
-  const currentYearCount = state.students.filter((student) => Number(student.year) === currentYear).length;
+  const currentYearCount = state.students.filter((student) => {
+    if (!student.admissionDate) {
+      return false;
+    }
+
+    const admissionDate = new Date(student.admissionDate);
+    return !Number.isNaN(admissionDate.getTime()) && admissionDate.getFullYear() === currentYear;
+  }).length;
 
   const departments = new Set(
     state.students
