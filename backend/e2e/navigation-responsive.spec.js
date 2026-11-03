@@ -1,13 +1,14 @@
 const { test, expect } = require('@playwright/test');
-const { addStudentThroughUi, uniqueStudent } = require('./helpers');
+const { addStudentThroughUi, authenticatedApiRequest, signInAsAdmin, uniqueStudent } = require('./helpers');
 
-test('navigate between sections and use the form controls on desktop and mobile', async ({ page, request }) => {
+test('navigate between sections and use the form controls on desktop and mobile', async ({ page }) => {
+  test.skip(!process.env.E2E_ADMIN_USERNAME || !process.env.E2E_ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD to run authenticated roster tests.');
   const student = uniqueStudent('Navigation Student');
   let studentId;
 
   try {
     await page.setViewportSize({ width: 1365, height: 900 });
-    await page.goto('/');
+    await signInAsAdmin(page);
 
     await page.getByRole('link', { name: 'Dashboard' }).click();
     await expect(page).toHaveURL(/#dashboard$/);
@@ -36,7 +37,7 @@ test('navigate between sections and use the form controls on desktop and mobile'
     expect(hasHorizontalOverflow).toBe(false);
   } finally {
     if (studentId) {
-      await request.delete(`/api/students/${studentId}`);
+      await authenticatedApiRequest(page, 'DELETE', `/api/students/${studentId}`);
     }
   }
 });

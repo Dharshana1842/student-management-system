@@ -1,12 +1,13 @@
 const { test, expect } = require('@playwright/test');
-const { addStudentThroughUi, fillStudentForm, uniqueStudent } = require('./helpers');
+const { addStudentThroughUi, authenticatedApiRequest, fillStudentForm, signInAsAdmin, uniqueStudent } = require('./helpers');
 
-test('register, view, edit, and confirmed-delete a student', async ({ page, request }) => {
+test('register, view, edit, and confirmed-delete a student', async ({ page }, testInfo) => {
+  test.skip(!process.env.E2E_ADMIN_USERNAME || !process.env.E2E_ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD to run authenticated roster tests.');
   const student = uniqueStudent('CRUD Student');
   let studentId;
 
   try {
-    await page.goto('/');
+    await signInAsAdmin(page);
     const row = await addStudentThroughUi(page, student);
     studentId = (await row.locator('td').first().innerText()).trim();
 
@@ -33,7 +34,7 @@ test('register, view, edit, and confirmed-delete a student', async ({ page, requ
     studentId = undefined;
   } finally {
     if (studentId) {
-      await request.delete(`/api/students/${studentId}`);
+      await authenticatedApiRequest(page, 'DELETE', `/api/students/${studentId}`);
     }
   }
 });

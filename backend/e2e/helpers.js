@@ -13,16 +13,48 @@ function uniqueStudent(label) {
   };
 }
 
+async function signInAsAdmin(page) {
+  const username = process.env.E2E_ADMIN_USERNAME;
+  const password = process.env.E2E_ADMIN_PASSWORD;
+  if (!username || !password) {
+    throw new Error('Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD to run roster end-to-end tests.');
+  }
+  await page.goto('/');
+  await page.getByLabel('Email or admin username').fill(username);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.locator('#appShell:not(.hidden)').waitFor();
+}
+
+async function authenticatedApiRequest(page, method, path, data) {
+  return page.evaluate(async ({ method, path, data }) => {
+    const csrfResponse = await fetch('/api/auth/csrf', { credentials: 'include' });
+    const csrf = await csrfResponse.json();
+    const response = await fetch(path, {
+      method,
+      credentials: 'include',
+      headers: {
+        'X-CSRF-TOKEN': csrf.token,
+        ...(data === undefined ? {} : { 'Content-Type': 'application/json' }),
+      },
+      ...(data === undefined ? {} : { body: JSON.stringify(data) }),
+    });
+    const text = await response.text();
+    return { status: response.status, body: text ? JSON.parse(text) : null };
+  }, { method, path, data });
+}
+
 async function fillStudentForm(page, student) {
-  await page.getByLabel('Name', { exact: true }).fill(student.name);
-  await page.getByLabel('Email', { exact: true }).fill(student.email);
-  await page.getByLabel('Phone', { exact: true }).fill(student.phone);
-  await page.getByLabel('Department', { exact: true }).fill(student.department);
-  await page.getByLabel('Course', { exact: true }).fill(student.course);
-  await page.getByLabel('Year', { exact: true }).fill(student.year);
-  await page.getByLabel('Date of Birth', { exact: true }).fill(student.dateOfBirth);
-  await page.getByLabel('Admission Date', { exact: true }).fill(student.admissionDate);
-  await page.getByLabel('Address', { exact: true }).fill(student.address);
+  const form = page.locator('#studentForm');
+  await form.getByLabel('Name', { exact: true }).fill(student.name);
+  await form.getByLabel('Email', { exact: true }).fill(student.email);
+  await form.getByLabel('Phone', { exact: true }).fill(student.phone);
+  await form.getByLabel('Department', { exact: true }).fill(student.department);
+  await form.getByLabel('Course', { exact: true }).fill(student.course);
+  await form.getByLabel('Year', { exact: true }).fill(student.year);
+  await form.getByLabel('Date of Birth', { exact: true }).fill(student.dateOfBirth);
+  await form.getByLabel('Admission Date', { exact: true }).fill(student.admissionDate);
+  await form.getByLabel('Address', { exact: true }).fill(student.address);
 }
 
 async function addStudentThroughUi(page, student) {
@@ -36,4 +68,10 @@ async function addStudentThroughUi(page, student) {
   return row;
 }
 
-module.exports = { addStudentThroughUi, fillStudentForm, uniqueStudent };
+module.exports = {
+  addStudentThroughUi,
+  authenticatedApiRequest,
+  fillStudentForm,
+  signInAsAdmin,
+  uniqueStudent,
+};

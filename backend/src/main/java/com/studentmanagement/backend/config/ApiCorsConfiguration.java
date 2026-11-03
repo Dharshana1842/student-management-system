@@ -23,6 +23,8 @@ public class ApiCorsConfiguration implements WebMvcConfigurer {
         registry.addMapping("/api/**")
                 .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE")
-                .allowedHeaders("Content-Type");
+                .allowedHeaders("Content-Type", "Accept", "X-CSRF-TOKEN")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }

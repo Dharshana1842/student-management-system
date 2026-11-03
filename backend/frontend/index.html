@@ -8,7 +8,44 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <main id="authView" class="auth-view">
+      <section class="auth-card" aria-labelledby="authTitle">
+        <div class="brand auth-brand">
+          <div class="brand-badge">SMS</div>
+          <div class="brand-text"><span class="brand-title">Student Management System</span></div>
+        </div>
+        <p class="eyebrow">Secure account access</p>
+        <h1 id="authTitle">Sign in</h1>
+        <p id="authDescription" class="auth-description">Sign in with your account to continue.</p>
+
+        <form id="loginForm" class="auth-form">
+          <label for="loginEmail">Email or admin username</label>
+          <input id="loginEmail" name="email" type="text" autocomplete="username" maxlength="254" required />
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" name="password" type="password" autocomplete="current-password" maxlength="72" required />
+          <p id="loginError" class="auth-error hidden" role="alert"></p>
+          <button type="submit" class="btn btn-primary">Sign in</button>
+        </form>
+
+        <form id="registrationForm" class="auth-form hidden">
+          <p class="roster-note">Student registration is available only to an existing roster entry. Use the student ID, email, and date of birth already on file.</p>
+          <label for="registrationStudentId">Student ID</label>
+          <input id="registrationStudentId" name="studentId" type="number" min="1" required />
+          <label for="registrationEmail">Roster email</label>
+          <input id="registrationEmail" name="email" type="email" maxlength="254" autocomplete="email" required />
+          <label for="registrationDateOfBirth">Date of birth on roster</label>
+          <input id="registrationDateOfBirth" name="dateOfBirth" type="date" required />
+          <label for="registrationPassword">Password (12–72 characters)</label>
+          <input id="registrationPassword" name="password" type="password" minlength="12" maxlength="72" autocomplete="new-password" required />
+          <p id="registrationError" class="auth-error hidden" role="alert"></p>
+          <button type="submit" class="btn btn-primary">Create student account</button>
+        </form>
+
+        <button id="authModeToggle" class="auth-mode-toggle" type="button">Register as a student</button>
+      </section>
+    </main>
+
+    <div id="appShell" class="app-shell hidden">
       <header class="topbar">
         <div class="brand">
           <div class="brand-badge">SMS</div>
@@ -18,14 +55,37 @@
         </div>
 
         <nav class="nav" aria-label="Main navigation">
-          <a href="#dashboard" class="nav-link active">Dashboard</a>
-          <a href="#students" class="nav-link">Students</a>
-          <a href="#add-student" class="nav-link">Add Student</a>
+          <a href="#dashboard" class="nav-link active" data-admin-only>Dashboard</a>
+          <a href="#students" class="nav-link" data-admin-only>Students</a>
+          <a href="#add-student" class="nav-link" data-admin-only>Add Student</a>
         </nav>
+        <div class="session-controls">
+          <span id="sessionIdentity" class="session-identity"></span>
+          <button id="logoutButton" class="btn btn-secondary" type="button">Sign out</button>
+        </div>
       </header>
 
       <main class="main-content">
-        <section id="dashboard" class="dashboard-section">
+        <section id="studentProfile" class="panel hidden" aria-labelledby="studentProfileTitle">
+          <p class="eyebrow">Your roster profile</p>
+          <h1 id="studentProfileTitle">Student Profile</h1>
+          <dl id="studentProfileContent" class="details-grid"></dl>
+          <form id="studentProfileForm" class="student-form">
+            <div class="form-grid">
+              <div class="field">
+                <label for="profilePhone">Phone number</label>
+                <input id="profilePhone" name="phone" type="tel" maxlength="20" required />
+              </div>
+              <div class="field">
+                <label for="profileAddress">Address</label>
+                <textarea id="profileAddress" name="address" rows="3" maxlength="500"></textarea>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save profile</button>
+          </form>
+        </section>
+
+        <section id="dashboard" class="dashboard-section" data-admin-only>
           <div class="section-heading">
             <div>
               <p class="eyebrow">Overview</p>
@@ -68,7 +128,7 @@
           </div>
         </section>
 
-        <section id="add-student" class="panel form-panel">
+        <section id="add-student" class="panel form-panel" data-admin-only>
           <div class="panel-header">
             <div>
               <p class="eyebrow">Student Form</p>
@@ -170,7 +230,7 @@
           </form>
         </section>
 
-        <section id="students" class="panel table-panel">
+        <section id="students" class="panel table-panel" data-admin-only>
           <div class="panel-header table-header">
             <div>
               <p class="eyebrow">Records</p>
@@ -268,6 +328,7 @@
     </div>
 
     <script src="config.js"></script>
+    <script src="auth-client.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

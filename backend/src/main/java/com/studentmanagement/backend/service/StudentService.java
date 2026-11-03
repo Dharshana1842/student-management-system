@@ -4,6 +4,7 @@ import com.studentmanagement.backend.exception.DuplicateStudentEmailException;
 import com.studentmanagement.backend.exception.StudentNotFoundException;
 import com.studentmanagement.backend.model.Student;
 import com.studentmanagement.backend.repository.StudentRepository;
+import com.studentmanagement.backend.repository.UserAccountRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,11 @@ import java.util.Locale;
 @Transactional
 public class StudentService {
     private final StudentRepository studentRepository;
+    private final UserAccountRepository userAccountRepository;
 
-    public StudentService(StudentRepository studentRepository) {
+    public StudentService(StudentRepository studentRepository, UserAccountRepository userAccountRepository) {
         this.studentRepository = studentRepository;
+        this.userAccountRepository = userAccountRepository;
     }
 
     @Transactional(readOnly = true)
@@ -51,12 +54,15 @@ public class StudentService {
         student.setDateOfBirth(updates.getDateOfBirth());
         student.setAddress(updates.getAddress());
         student.setAdmissionDate(updates.getAdmissionDate());
+        userAccountRepository.findByStudent_Id(id)
+                .ifPresent(account -> account.setEmail(updates.getEmail()));
 
         return studentRepository.save(student);
     }
 
     public void delete(Integer id) {
         Student student = findById(id);
+        userAccountRepository.deleteByStudent_Id(id);
         studentRepository.delete(student);
     }
 

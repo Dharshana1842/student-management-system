@@ -57,6 +57,88 @@ button:disabled {
   display: none !important;
 }
 
+.auth-view {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(100%, 460px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(24px, 5vw, 40px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: var(--shadow);
+}
+
+.auth-brand {
+  margin-bottom: 10px;
+}
+
+.auth-description,
+.roster-note {
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-form label {
+  font-weight: 700;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f9faff;
+  color: var(--text);
+}
+
+.auth-form input:focus {
+  outline: 3px solid rgba(79, 70, 229, 0.2);
+  border-color: var(--primary);
+}
+
+.auth-error {
+  color: var(--danger-dark);
+  font-weight: 700;
+}
+
+.auth-mode-toggle {
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.session-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.session-identity {
+  max-width: 260px;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .app-shell {
   max-width: 1440px;
   margin: 0 auto;

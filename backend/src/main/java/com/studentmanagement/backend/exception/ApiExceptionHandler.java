@@ -1,5 +1,7 @@
 package com.studentmanagement.backend.exception;
 
+import com.studentmanagement.backend.controller.AuthController;
+import com.studentmanagement.backend.service.AuthService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,18 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(AuthController.InvalidCredentialsException.class)
+    public ResponseEntity<ApiError> handleInvalidCredentials() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiError("Invalid credentials.", Map.of()));
+    }
+
+    @ExceptionHandler(AuthService.RegistrationUnavailableException.class)
+    public ResponseEntity<ApiError> handleUnavailableRegistration() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiError("Registration is unavailable for the supplied roster details.", Map.of()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {
         Map<String, String> errors = new LinkedHashMap<>();

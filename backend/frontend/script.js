@@ -1,8 +1,22 @@
 const configuredApiBaseUrl = typeof window.APP_CONFIG?.apiBaseUrl === 'string'
   ? window.APP_CONFIG.apiBaseUrl.trim().replace(/\/+$/, '')
   : '';
-const API_URL = `${configuredApiBaseUrl}/api/students`;
+const authClient = window.AuthClient.createAuthClient(configuredApiBaseUrl);
 
+const authView = document.getElementById('authView');
+const appShell = document.getElementById('appShell');
+const loginForm = document.getElementById('loginForm');
+const registrationForm = document.getElementById('registrationForm');
+const authModeToggle = document.getElementById('authModeToggle');
+const authTitle = document.getElementById('authTitle');
+const authDescription = document.getElementById('authDescription');
+const loginError = document.getElementById('loginError');
+const registrationError = document.getElementById('registrationError');
+const sessionIdentity = document.getElementById('sessionIdentity');
+const logoutButton = document.getElementById('logoutButton');
+const studentProfile = document.getElementById('studentProfile');
+const studentProfileContent = document.getElementById('studentProfileContent');
+const studentProfileForm = document.getElementById('studentProfileForm');
 const studentForm = document.getElementById('studentForm');
 const studentTableBody = document.getElementById('studentTableBody');
 const studentIdInput = document.getElementById('studentId');
@@ -29,6 +43,7 @@ const studentDetailsContent = document.getElementById('studentDetailsContent');
 const closeDetailsButton = document.getElementById('closeDetailsButton');
 
 const state = {
+  session: null,
   students: [],
   page: 1,
   pageSize: 5,
@@ -39,6 +54,132 @@ const state = {
     year: '',
   },
 };
+
+function showAuthView() {
+  state.session = null;
+  appShell.classList.add('hidden');
+  authView.classList.remove('hidden');
+  loginForm.reset();
+  registrationForm.reset();
+  authClient.clearCsrfToken();
+  setAuthMode(false);
+}
+
+function setAuthMode(registering) {
+  loginForm.classList.toggle('hidden', registering);
+  registrationForm.classList.toggle('hidden', !registering);
+  authTitle.textContent = registering ? 'Create a student account' : 'Sign in';
+  authDescription.textContent = registering
+    ? 'Verify your existing roster identity to create a student account.'
+    : 'Sign in with your account to continue.';
+  authModeToggle.textContent = registering ? 'Back to sign in' : 'Register as a student';
+  loginError.classList.add('hidden');
+  registrationError.classList.add('hidden');
+}
+
+function showAuthError(node, message) {
+  node.textContent = message;
+  node.classList.remove('hidden');
+}
+
+async function enterSession(session) {
+  state.session = session;
+  authView.classList.add('hidden');
+  appShell.classList.remove('hidden');
+  sessionIdentity.textContent = `${session.email} · ${session.role}`;
+  const isAdmin = session.role === 'ADMIN';
+  document.querySelectorAll('[data-admin-only]').forEach((node) => {
+    node.classList.toggle('hidden', !isAdmin);
+  });
+  studentProfile.classList.toggle('hidden', isAdmin);
+
+  if (isAdmin) {
+    await fetchStudents();
+  } else {
+    await fetchOwnStudent();
+  }
+}
+
+async function initializeSession() {
+  try {
+    await authClient.refreshCsrfToken();
+    const response = await authClient.request('/api/auth/session');
+    if (!response.ok) {
+      return;
+    }
+    await enterSession(await response.json());
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function submitLogin(event) {
+  event.preventDefault();
+  loginError.classList.add('hidden');
+  try {
+    await authClient.refreshCsrfToken();
+    const response = await authClient.request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error('Sign-in failed. Check your credentials and try again.');
+    }
+    authClient.clearCsrfToken();
+    await authClient.refreshCsrfToken();
+    await enterSession(await response.json());
+  } catch (error) {
+    showAuthError(loginError, error.message || 'Unable to sign in right now.');
+  } finally {
+    document.getElementById('loginPassword').value = '';
+  }
+}
+
+async function submitRegistration(event) {
+  event.preventDefault();
+  registrationError.classList.add('hidden');
+  try {
+    await authClient.refreshCsrfToken();
+    const response = await authClient.request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId: Number(document.getElementById('registrationStudentId').value),
+        email: document.getElementById('registrationEmail').value.trim(),
+        dateOfBirth: document.getElementById('registrationDateOfBirth').value,
+        password: document.getElementById('registrationPassword').value,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(await getApiError(response));
+    }
+    const registeredEmail = document.getElementById('registrationEmail').value.trim();
+    registrationForm.reset();
+    setAuthMode(false);
+    document.getElementById('loginEmail').value = registeredEmail;
+    showAuthError(loginError, 'Account created. Sign in with your new credentials.');
+  } catch (error) {
+    showAuthError(registrationError, error.message || 'Registration is unavailable for the supplied roster details.');
+  }
+}
+
+async function signOut() {
+  try {
+    const response = await authClient.request('/api/auth/logout', { method: 'POST' });
+    if (!response.ok) {
+      throw new Error('Unable to sign out.');
+    }
+  } catch (error) {
+    console.error(error);
+  } finally {
+    authClient.clearCsrfToken();
+    showAuthView();
+  }
+}
 
 function showToast(message, type = 'success') {
   const toast = document.createElement('div');
@@ -357,9 +498,13 @@ async function fetchStudents() {
   setLoading(true, 'Loading students...');
 
   try {
-    const response = await fetch(API_URL);
+    const response = await authClient.request('/api/students');
 
     if (!response.ok) {
+      if (response.status === 401) {
+        showAuthView();
+        return;
+      }
       throw new Error(`Failed to fetch students: ${response.status}`);
     }
 
@@ -382,6 +527,62 @@ async function fetchStudents() {
     showToast(`Unable to load students: ${error.message}`, 'error');
   } finally {
     setLoading(false);
+  }
+}
+
+async function fetchOwnStudent() {
+  try {
+    const response = await authClient.request('/api/students/me');
+    if (!response.ok) {
+      if (response.status === 401) {
+        showAuthView();
+        return;
+      }
+      throw new Error('Unable to load your roster profile.');
+    }
+    const student = await response.json();
+    document.getElementById('profilePhone').value = student.phone || '';
+    document.getElementById('profileAddress').value = student.address || '';
+    const fields = [
+      ['Student ID', student.id],
+      ['Name', student.name],
+      ['Email', student.email],
+      ['Phone', student.phone],
+      ['Department', student.department],
+      ['Course', student.course],
+      ['Year', student.year],
+      ['Date of Birth', formatDate(student.dateOfBirth)],
+      ['Admission Date', formatDate(student.admissionDate)],
+      ['Address', student.address],
+    ];
+    studentProfileContent.innerHTML = fields
+      .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || 'Not provided')}</dd></div>`)
+      .join('');
+  } catch (error) {
+    console.error(error);
+    showToast('Unable to load your roster profile.', 'error');
+  }
+}
+
+async function updateOwnStudentProfile(event) {
+  event.preventDefault();
+  const phone = document.getElementById('profilePhone').value.trim();
+  const address = document.getElementById('profileAddress').value.trim();
+
+  try {
+    const response = await authClient.request('/api/students/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, address }),
+    });
+    if (!response.ok) {
+      throw new Error(await getApiError(response));
+    }
+    await fetchOwnStudent();
+    showToast('Profile updated successfully.', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast(`Unable to update profile: ${error.message}`, 'error');
   }
 }
 
@@ -408,7 +609,7 @@ async function editStudent(studentId) {
   setLoading(true, 'Loading student details...');
 
   try {
-    const response = await fetch(`${API_URL}/${studentId}`);
+    const response = await authClient.request(`/api/students/${studentId}`);
 
     if (!response.ok) {
       throw new Error('Failed to load student');
@@ -428,7 +629,7 @@ async function showStudentDetails(studentId) {
   setLoading(true, 'Loading student details...');
 
   try {
-    const response = await fetch(`${API_URL}/${studentId}`);
+    const response = await authClient.request(`/api/students/${studentId}`);
 
     if (!response.ok) {
       throw new Error(`Failed to load student details: ${response.status}`);
@@ -470,7 +671,7 @@ async function deleteStudent(studentId) {
   setLoading(true, 'Deleting student...');
 
   try {
-    const response = await fetch(`${API_URL}/${studentId}`, {
+    const response = await authClient.request(`/api/students/${studentId}`, {
       method: 'DELETE',
     });
 
@@ -505,13 +706,12 @@ async function handleFormSubmit(event) {
   }
 
   const studentId = studentIdInput.value;
-  const url = studentId ? `${API_URL}/${studentId}` : API_URL;
   const method = studentId ? 'PUT' : 'POST';
 
   setLoading(true, studentId ? 'Saving student changes...' : 'Adding student...');
 
   try {
-    const response = await fetch(url, {
+    const response = await authClient.request(studentId ? `/api/students/${studentId}` : '/api/students', {
       method,
       headers: {
         'Content-Type': 'application/json',
@@ -535,6 +735,13 @@ async function handleFormSubmit(event) {
 }
 
 function attachHandlers() {
+  loginForm.addEventListener('submit', submitLogin);
+  registrationForm.addEventListener('submit', submitRegistration);
+  studentProfileForm.addEventListener('submit', updateOwnStudentProfile);
+  authModeToggle.addEventListener('click', () => {
+    setAuthMode(registrationForm.classList.contains('hidden'));
+  });
+  logoutButton.addEventListener('click', signOut);
   studentForm.addEventListener('submit', handleFormSubmit);
   refreshButton.addEventListener('click', fetchStudents);
   clearFormButton.addEventListener('click', resetForm);
@@ -633,4 +840,4 @@ function attachHandlers() {
 }
 
 attachHandlers();
-fetchStudents();
+initializeSession();
