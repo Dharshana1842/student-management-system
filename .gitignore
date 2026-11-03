@@ -1,9 +1,12 @@
-backend/target/
-backend/*.log
+**/target/
+**/node_modules/
+**/coverage/
 *.log
 .idea/
 .vscode/
 *.class
 *.jar
 .env
+.env.*
+!.env.example
 .DS_Store

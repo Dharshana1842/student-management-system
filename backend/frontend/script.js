@@ -21,6 +21,9 @@ const editModeBadge = document.getElementById('editModeBadge');
 const loadingOverlay = document.getElementById('loadingOverlay');
 const toastContainer = document.getElementById('toastContainer');
 const formErrorBox = document.getElementById('formErrorBox');
+const studentDetailsDialog = document.getElementById('studentDetailsDialog');
+const studentDetailsContent = document.getElementById('studentDetailsContent');
+const closeDetailsButton = document.getElementById('closeDetailsButton');
 
 const state = {
   students: [],
@@ -75,6 +78,27 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+async function getApiError(response) {
+  const responseText = await response.text();
+
+  if (!responseText) {
+    return `Request failed with status ${response.status}.`;
+  }
+
+  try {
+    const body = JSON.parse(responseText);
+    if (body && typeof body === 'object' && body.errors && typeof body.errors === 'object') {
+      showFormErrors(body.errors);
+    }
+    return (body && typeof body === 'object' && body.message) || responseText;
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) {
+      throw error;
+    }
+    return responseText;
+  }
 }
 
 function getFormFieldValue(fieldId) {
@@ -229,7 +253,7 @@ function applyFilters() {
   const searchTerm = state.search.trim().toLowerCase();
 
   return state.students.filter((student) => {
-    const matchesSearch = !searchTerm || [student.name, student.email, student.phone, student.department, student.course].some((value) => (value || '').toLowerCase().includes(searchTerm));
+    const matchesSearch = !searchTerm || [student.id, student.name, student.email, student.phone, student.department, student.course].some((value) => String(value || '').toLowerCase().includes(searchTerm));
     const matchesDepartment = !state.filters.department || (student.department || '').toLowerCase() === state.filters.department.toLowerCase();
     const matchesCourse = !state.filters.course || (student.course || '').toLowerCase() === state.filters.course.toLowerCase();
     const matchesYear = !state.filters.year || String(student.year) === String(state.filters.year);
@@ -316,6 +340,7 @@ function renderStudents() {
           <td class="actions-cell">
             <div class="action-group">
               <button class="action-btn edit" type="button" data-id="${student.id}">Edit</button>
+              <button class="action-btn details" type="button" data-id="${student.id}">Details</button>
               <button class="action-btn delete" type="button" data-id="${student.id}">Delete</button>
             </div>
           </td>
@@ -351,7 +376,7 @@ async function fetchStudents() {
         </td>
       </tr>
     `;
-    showToast('Unable to load students from the API.', 'error');
+    showToast(`Unable to load students: ${error.message}`, 'error');
   } finally {
     setLoading(false);
   }
@@ -396,6 +421,42 @@ async function editStudent(studentId) {
   }
 }
 
+async function showStudentDetails(studentId) {
+  setLoading(true, 'Loading student details...');
+
+  try {
+    const response = await fetch(`${API_URL}/${studentId}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to load student details: ${response.status}`);
+    }
+
+    const student = await response.json();
+    const fields = [
+      ['Student ID', student.id],
+      ['Name', student.name],
+      ['Email', student.email],
+      ['Phone', student.phone],
+      ['Department', student.department],
+      ['Course', student.course],
+      ['Year', student.year],
+      ['Date of Birth', formatDate(student.dateOfBirth)],
+      ['Admission Date', formatDate(student.admissionDate)],
+      ['Address', student.address],
+    ];
+
+    studentDetailsContent.innerHTML = fields
+      .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || 'Not provided')}</dd></div>`)
+      .join('');
+    studentDetailsDialog.showModal();
+  } catch (error) {
+    console.error(error);
+    showToast('Unable to load the selected student details.', 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
 async function deleteStudent(studentId) {
   const confirmed = window.confirm('Are you sure you want to delete this student?');
 
@@ -411,8 +472,7 @@ async function deleteStudent(studentId) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Delete failed');
+      throw new Error(await getApiError(response));
     }
 
     if (studentIdInput.value === String(studentId)) {
@@ -457,8 +517,7 @@ async function handleFormSubmit(event) {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Request failed');
+      throw new Error(await getApiError(response));
     }
 
     resetForm();
@@ -466,7 +525,7 @@ async function handleFormSubmit(event) {
     showToast(studentId ? 'Student updated successfully.' : 'Student added successfully.', 'success');
   } catch (error) {
     console.error(error);
-    showToast('Unable to save student. Please check the backend and form values.', 'error');
+    showToast(`Unable to save student: ${error.message}`, 'error');
   } finally {
     setLoading(false);
   }
@@ -553,8 +612,19 @@ function attachHandlers() {
       editStudent(studentId);
     }
 
+    if (target.classList.contains('details')) {
+      showStudentDetails(studentId);
+    }
+
     if (target.classList.contains('delete')) {
       deleteStudent(studentId);
+    }
+  });
+
+  closeDetailsButton.addEventListener('click', () => studentDetailsDialog.close());
+  studentDetailsDialog.addEventListener('click', (event) => {
+    if (event.target === studentDetailsDialog) {
+      studentDetailsDialog.close();
     }
   });
 }
