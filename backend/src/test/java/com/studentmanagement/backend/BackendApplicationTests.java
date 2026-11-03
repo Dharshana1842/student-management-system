@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -96,6 +97,19 @@ class BackendApplicationTests {
 						.content(studentJson("Another Student", email.toUpperCase(), 1)))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.message").exists());
+	}
+
+	@Test
+	void allowsCapacitorWebViewApiRequests() throws Exception {
+		mockMvc.perform(options("/api/students")
+						.header("Origin", "https://localhost")
+						.header("Access-Control-Request-Method", "POST")
+						.header("Access-Control-Request-Headers", "content-type"))
+				.andExpect(status().isOk())
+				.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+						.string("Access-Control-Allow-Origin", "https://localhost"))
+				.andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+						.string("Access-Control-Allow-Methods", org.hamcrest.Matchers.containsString("POST")));
 	}
 
 	private String studentJson(String name, String email, int year) throws Exception {

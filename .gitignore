@@ -1,6 +1,11 @@
 **/target/
 **/node_modules/
 **/coverage/
+**/playwright-report/
+**/test-results/
+**/.gradle/
+**/build/
+**/local.properties
 *.log
 .idea/
 .vscode/

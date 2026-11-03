@@ -1,0 +1,19 @@
+{
+  "name": "student-management-system",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "cap:sync": "cap sync android",
+    "cap:open": "cap open android",
+    "assets:android": "capacitor-assets generate --android --assetPath assets --iconBackgroundColor=#4f46e5 --splashBackgroundColor=#f4f7ff"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0",
+    "@playwright/test": "1.64.1"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
+  }
+}

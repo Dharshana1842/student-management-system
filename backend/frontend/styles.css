@@ -714,7 +714,10 @@ tbody tr:hover {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 16px;
+    padding: max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .topbar,
@@ -731,6 +734,12 @@ tbody tr:hover {
 
   .nav {
     justify-content: flex-start;
+  }
+
+  .nav-link,
+  .btn,
+  .action-btn {
+    min-height: 44px;
   }
 
   .stats-grid,

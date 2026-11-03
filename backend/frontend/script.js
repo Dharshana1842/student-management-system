@@ -1,4 +1,7 @@
-const API_URL = '/api/students';
+const configuredApiBaseUrl = typeof window.APP_CONFIG?.apiBaseUrl === 'string'
+  ? window.APP_CONFIG.apiBaseUrl.trim().replace(/\/+$/, '')
+  : '';
+const API_URL = `${configuredApiBaseUrl}/api/students`;
 
 const studentForm = document.getElementById('studentForm');
 const studentTableBody = document.getElementById('studentTableBody');

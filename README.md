@@ -17,6 +17,7 @@ A full-stack student records application with a responsive dashboard, a Spring B
 - MySQL 8+
 - Maven Wrapper
 - HTML5, CSS3, and vanilla JavaScript
+- Capacitor 8 for the Android application
 
 ## Project structure
 
@@ -25,10 +26,14 @@ StudentManagementSystem/
 ├── README.md
 ├── .gitignore
 └── backend/
+    ├── android/                 # Capacitor Android project
+    ├── assets/                  # Source app icon for Capacitor asset generation
+    ├── capacitor.config.json
     ├── database/
     │   └── schema.sql
     ├── frontend/
     │   ├── index.html
+    │   ├── config.js            # Configurable API base URL
     │   ├── script.js
     │   └── styles.css
     ├── src/
@@ -43,6 +48,7 @@ StudentManagementSystem/
     │   └── test/
     ├── mvnw
     ├── mvnw.cmd
+    ├── package.json             # Capacitor and Playwright tooling
     └── pom.xml
 ```
 
@@ -105,6 +111,63 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar
 ```
 
 Keep the `frontend/` directory alongside the application working directory when using the packaged JAR.
+
+## Testing
+
+Run the backend validation tests with Java 25:
+
+```powershell
+cd backend
+.\mvnw.cmd test
+```
+
+For browser end-to-end testing against the real MySQL database, first start the backend as described above. In a second terminal:
+
+```powershell
+cd backend
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+The browser suite uses uniquely named temporary records and removes them after each test. It exercises CRUD, search, pagination, reload persistence, navigation, form controls, and a mobile viewport. Do not run these tests against production data.
+
+## Android app (Capacitor)
+
+The Android app reuses `backend/frontend/`; the Spring Boot Maven backend and MySQL database remain the server and persistent store. Capacitor 8 packages the existing frontend into the Android WebView. The Android application ID is `com.dharshana.studentmanagement` and the app label is `Student Management System`.
+
+### Configure the backend URL
+
+The website keeps same-origin API requests by default. Before building the Android app, edit `backend/frontend/config.js` and set `apiBaseUrl` to the **HTTPS origin** of a backend reachable from the device:
+
+```js
+window.APP_CONFIG = Object.freeze({
+  apiBaseUrl: 'https://api.your-domain.example',
+});
+```
+
+The frontend appends `/api/students`. Replace the example with your real deployed API origin; do not use `localhost` for a production APK. A phone's `localhost` points to the phone itself, not the computer hosting the backend. The backend must be reachable by the device and use HTTPS. Configure `APP_CORS_ALLOWED_ORIGINS` on the backend to include the Capacitor Android WebView origin (`https://localhost`) and any website origins that call the API, comma-separated. Keep database credentials only in the backend environment (`DB_USERNAME` and `DB_PASSWORD`); they are never placed in the APK.
+
+### Requirements
+
+- Node.js 22 or later and npm.
+- Android Studio or Android SDK command-line tools, Android SDK Platform 36, and Android Build Tools.
+- JDK 21 for the generated Android Gradle project. The Spring backend continues to require JDK 25.
+- An Android emulator or device for install/runtime testing.
+
+### Generate assets and build a debug APK
+
+From `backend/` in PowerShell, after installing Android Studio/SDK and configuring `ANDROID_HOME` or `ANDROID_SDK_ROOT`:
+
+```powershell
+npm ci
+npm run assets:android
+npx cap sync android
+Set-Location android
+.\gradlew.bat assembleDebug
+```
+
+The APK is written to `backend/android/app/build/outputs/apk/debug/app-debug.apk`. Install it on a connected device with `adb install -r app/build/outputs/apk/debug/app-debug.apk`, or open the Android project with `npm run cap:open`. After changing frontend assets or `frontend/config.js`, rerun `npx cap sync android` and rebuild. The launcher icon and splash-screen resources are generated from `backend/assets/logo.svg`.
 
 ## REST API
 

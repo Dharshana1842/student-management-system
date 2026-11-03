@@ -1,0 +1,9 @@
+{
+  "appId": "com.dharshana.studentmanagement",
+  "appName": "Student Management System",
+  "webDir": "frontend",
+  "backgroundColor": "#f4f7ff",
+  "android": {
+    "allowMixedContent": false
+  }
+}
