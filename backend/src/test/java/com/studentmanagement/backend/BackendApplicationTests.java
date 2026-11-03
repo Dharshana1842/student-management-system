@@ -217,7 +217,7 @@ class BackendApplicationTests {
 		rosterEntry = studentRepository.saveAndFlush(rosterEntry);
 
 		String registration = objectMapper.writeValueAsString(new RegistrationRequest(
-				rosterEntry.getId(), rosterEntry.getEmail(), "2004-01-15", "correct-horse-battery"));
+				rosterEntry.getId(), "ROSTER@EXAMPLE.TEST", "2004-01-15", "correct-horse-battery"));
 		MvcResult csrfInitialization = mockMvc.perform(get("/api/auth/csrf"))
 				.andExpect(status().isOk())
 				.andReturn();
@@ -286,6 +286,79 @@ class BackendApplicationTests {
 				.andExpect(status().isNoContent());
 		mockMvc.perform(get("/api/auth/session").session(session))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void explainsMissingAndMismatchedRosterDetailsWithoutChangingRecords() throws Exception {
+		Student rosterEntry = new Student();
+		rosterEntry.setName("Roster Student");
+		rosterEntry.setEmail("verify-" + UUID.randomUUID() + "@example.test");
+		rosterEntry.setPhone("+1 555 123 4567");
+		rosterEntry.setDepartment("Engineering");
+		rosterEntry.setCourse("Computer Science");
+		rosterEntry.setYear(2);
+		rosterEntry.setDateOfBirth(java.time.LocalDate.of(2004, 1, 15));
+		rosterEntry = studentRepository.saveAndFlush(rosterEntry);
+
+		MvcResult csrfResult = mockMvc.perform(get("/api/auth/csrf"))
+				.andExpect(status().isOk())
+				.andReturn();
+		String csrfToken = objectMapper.readTree(csrfResult.getResponse().getContentAsString())
+				.get("token").asText();
+		MockHttpSession csrfSession = (MockHttpSession) csrfResult.getRequest().getSession(false);
+
+		mockMvc.perform(post("/api/auth/register")
+						.session(csrfSession)
+						.header("X-CSRF-TOKEN", csrfToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("{\"studentId\":null,\"email\":\" \",\"dateOfBirth\":null,\"password\":\"\"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.studentId").value("Enter the student ID from your roster."))
+				.andExpect(jsonPath("$.errors.email").value("Enter the email address on your student roster."))
+				.andExpect(jsonPath("$.errors.dateOfBirth").value("Enter the date of birth on your student roster."))
+				.andExpect(jsonPath("$.errors.password").value("Enter a password."));
+
+		mockMvc.perform(post("/api/auth/register")
+						.session(csrfSession)
+						.header("X-CSRF-TOKEN", csrfToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RegistrationRequest(
+								rosterEntry.getId(), "not-an-email", "2004-01-15", "correct-horse-battery"))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors.email").value("Enter a valid email address."));
+
+		String mismatchMessage = "Registration could not be completed. Check that the student ID, email, and date of birth match the existing roster record, and that the student has not already registered. If the problem continues, contact your school administrator.";
+		mockMvc.perform(post("/api/auth/register")
+						.session(csrfSession)
+						.header("X-CSRF-TOKEN", csrfToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RegistrationRequest(
+								rosterEntry.getId(), "wrong@example.test", "2004-01-15", "correct-horse-battery"))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(mismatchMessage));
+
+		mockMvc.perform(post("/api/auth/register")
+						.session(csrfSession)
+						.header("X-CSRF-TOKEN", csrfToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RegistrationRequest(
+								rosterEntry.getId(), rosterEntry.getEmail(), "2000-01-01", "correct-horse-battery"))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(mismatchMessage));
+
+		mockMvc.perform(post("/api/auth/register")
+						.session(csrfSession)
+						.header("X-CSRF-TOKEN", csrfToken)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RegistrationRequest(
+								rosterEntry.getId() + 1, rosterEntry.getEmail(), "2004-01-15", "correct-horse-battery"))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.message").value(mismatchMessage));
+
+		org.junit.jupiter.api.Assertions.assertTrue(userAccountRepository.findByEmailIgnoreCase(rosterEntry.getEmail()).isEmpty());
+		org.junit.jupiter.api.Assertions.assertEquals(1, studentRepository.count());
+		org.junit.jupiter.api.Assertions.assertEquals(rosterEntry.getEmail(),
+				studentRepository.findById(rosterEntry.getId()).orElseThrow().getEmail());
 	}
 
 	@Test

@@ -236,7 +236,11 @@ async function getApiError(response) {
     if (body && typeof body === 'object' && body.errors && typeof body.errors === 'object') {
       showFormErrors(body.errors);
     }
-    return (body && typeof body === 'object' && body.message) || responseText;
+    const message = (body && typeof body === 'object' && body.message) || responseText;
+    const details = body && typeof body === 'object' && body.errors
+      ? Object.values(body.errors).filter((detail) => typeof detail === 'string').join(' ')
+      : '';
+    return details ? `${message} ${details}` : message;
   } catch (error) {
     if (!(error instanceof SyntaxError)) {
       throw error;

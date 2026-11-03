@@ -23,16 +23,21 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(AuthService.RegistrationUnavailableException.class)
-    public ResponseEntity<ApiError> handleUnavailableRegistration() {
+    public ResponseEntity<ApiError> handleUnavailableRegistration(AuthService.RegistrationUnavailableException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiError("Registration is unavailable for the supplied roster details.", Map.of()));
+                .body(new ApiError(exception.getMessage(), exception.getErrors()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception) {
         Map<String, String> errors = new LinkedHashMap<>();
         for (FieldError fieldError : exception.getBindingResult().getFieldErrors()) {
-            errors.putIfAbsent(fieldError.getField(), fieldError.getDefaultMessage());
+            String code = fieldError.getCode();
+            if (!errors.containsKey(fieldError.getField())
+                    || "NotBlank".equals(code)
+                    || "NotNull".equals(code)) {
+                errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            }
         }
         return ResponseEntity.badRequest().body(new ApiError("Validation failed.", errors));
     }

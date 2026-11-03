@@ -2,6 +2,7 @@ package com.studentmanagement.backend.controller;
 
 import com.studentmanagement.backend.service.AuthService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -100,10 +101,18 @@ public class AuthController {
     }
 
     public record RegistrationRequest(
-            @NotNull @Positive Integer studentId,
-            @NotBlank @Size(max = 254) String email,
-            @NotNull LocalDate dateOfBirth,
-            @NotBlank @Size(min = 12, max = 72) String password) {
+            @NotNull(message = "Enter the student ID from your roster.")
+            @Positive(message = "Student ID must be a positive number.")
+            Integer studentId,
+            @NotBlank(message = "Enter the email address on your student roster.")
+            @Email(message = "Enter a valid email address.")
+            @Size(max = 254, message = "Email must be 254 characters or fewer.")
+            String email,
+            @NotNull(message = "Enter the date of birth on your student roster.")
+            LocalDate dateOfBirth,
+            @NotBlank(message = "Enter a password.")
+            @Size(max = 72, message = "Password must be 72 characters or fewer.")
+            String password) {
     }
 
     public record LoginRequest(

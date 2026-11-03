@@ -83,7 +83,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX
   ON student_management.* TO 'student_app'@'localhost';
 ```
 
-Set the required `DB_USERNAME` and `DB_PASSWORD` environment variables before starting the backend. Spring fails early with an unresolved-property message if either required value is missing; it does not fall back to a blank username or password. Optional variables are `DB_HOST` (default `localhost`), `DB_PORT` (default `3306`), `DB_NAME` (default `student_management`), and `SERVER_PORT` (default `8080`). Do not commit credentials.
+Set the required `DB_USERNAME` and `DB_PASSWORD` environment variables before starting the backend, and make sure they contain actual credentials rather than literal placeholder text. If MySQL reports `Access denied for user '${DB_USERNAME}'`, the application was started without a usable `DB_USERNAME`; a subsequent Hibernate dialect error is a consequence of that failed database connection. Optional variables are `DB_HOST` (default `localhost`), `DB_PORT` (default `3306`), `DB_NAME` (default `student_management`), and `SERVER_PORT` (default `8080`). Do not commit credentials.
 
 There are no default admin or student passwords. The admin account can be created on first startup with `ADMIN_EMAIL` and `ADMIN_PASSWORD`; these values do not change the password of an existing account. Student accounts are created by registering against an existing roster ID, email, and date of birth. Login uses the stored BCrypt password hash. No email-based password recovery service is configured.
 
